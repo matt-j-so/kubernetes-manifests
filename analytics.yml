@@ -1,0 +1,69 @@
+#Deployment:spec:containers:imagePullPolicy and Deployment:spec:containers:ports is actually not compulsory from the perspective of a minimum requirement of the yaml to work.
+#The name in Deployment:labels:any-name and Service:selector:any-name, has to match.
+#The port in Deployment:spec:containers:ports:containerPort and Service:spec:ports:targetPort, has to match.
+#The name in Service:metadata:name and Ingress:spec:rules:http:paths:backend:service:name, has to match.
+#The port in Service:spec:ports:port and Ingress:spec:rules:http:paths:backend:service:port:number, has to match.
+#The Service port can be any number. Multiple Services can use the same port because they have different IP addresses assigned.
+#More info: https://learnk8s.io/troubleshooting-deployments
+
+#A Deployment is a recipe for creating copies of your application called Pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-go
+#  labels:
+#    track: canary
+spec:
+  selector:
+    matchLabels:
+      any-name: analytics-go
+  template:
+    metadata:
+      labels:
+        any-name: analytics-go
+    spec:
+      containers:
+        - name: analytics-name
+          image: nav9/analytics-go:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+---
+#A Service is an internal load balancer that routes the traffic to Pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-svc
+spec:
+  type: ClusterIP
+  ports:
+    - targetPort: 8082
+      port: 8084   
+  selector:
+    any-name: analytics-go
+#Test the service with: kubectl port-forward service/frontend-svc 3000:8083
+#And then curl http://localhost:3000
+#3000 is the port that you wish to open on your computer. 80 is the port exposed by the Service in the port field.
+---
+#An Ingress is a description of how the traffic should flow from outside the cluster to your Service.
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: analytics-ingress
+#spec:
+#  rules:
+#  - http:
+#      paths:
+#      - backend:
+#          service:
+#            name: analytics-svc
+#            port:
+#              number: 8084
+#        path: /
+#        pathType: Prefix
+
+
+#Service and Deployment aren't connected at all. The Service points to the Pods directly and skips the Deployment altogether.
+#Pods and the Services are related to each other.
+
+
